@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/crc-org/macadam/test/osprovider"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
 type ListReporter struct {
+	Name		   string
 	Image          string
 	Created        string
 	Running        bool
@@ -41,21 +41,10 @@ var _ = Describe("Macadam", func() {
 
 	It("creates a new CentOS VM, starts it, ssh in and cleans", func() {
 		// verify there is no vm
-		var machineResponses []ListReporter
-		session := macadamTest.Macadam([]string{"list", "--format", "json"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit())
-		err := json.Unmarshal(session.Out.Contents(), &machineResponses)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(machineResponses)).Should(Equal(0))
-
-		// download CentOS image
-		centosProvider := osprovider.NewCentosProvider()
-		image, err := centosProvider.Fetch(tempDir)
-		Expect(err).NotTo(HaveOccurred())
+		noVMcheck()
 
 		// init a CentOS VM
-		session = macadamTest.Macadam([]string{"init", image})
+		session := macadamTest.Macadam([]string{"init", image})
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit())
 
