@@ -1,16 +1,13 @@
 package e2e
 
 import (
-	"encoding/json"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Macadam init setup test", Label("multiple"), func() {
+var _ = Describe("Macadam init setup test", Label("multiple", "linux", "darwin"), func() {
 	BeforeEach(func() {
-		noVMcheck()
+		vmNumberCheck(0)
 	})
 
 	AfterEach(func() {
@@ -19,60 +16,42 @@ var _ = Describe("Macadam init setup test", Label("multiple"), func() {
 
 	It("create multiple CentOS VM", Label("mul-centos"), func() {
 		// init a CentOS VM with name vm1
-		session := macadamTest.Macadam([]string{"init", "--name", "vm1", image})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
+		initCMD := []string{"init", "--name", "vm1", CENTOS_QCOW2_IMAGE}
+		runCMDsuccess(initCMD)
 
 		// check the list command returns one item
-		session = macadamTest.Macadam([]string{"list", "--format", "json"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		err = json.Unmarshal(session.Out.Contents(), &machineResponses)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(machineResponses)).Should(Equal(1))
+		vmNumberCheck(1)
 
 		// start the CentOS VM1
-		session = macadamTest.Macadam([]string{"start", "vm1"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		Expect(session.OutputToString()).Should(ContainSubstring("started successfully"))
+		startCMD := []string{"start", "vm1"}
+		output := runCMDsuccess(startCMD)
+		Expect(output).Should(ContainSubstring("started successfully"))
 
 		// ssh into the VM1 and prints user
-		session = macadamTest.Macadam([]string{"ssh", "vm1", "whoami"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		Expect(session.OutputToString()).Should(Equal("core"))
+		sshCMD := []string{"ssh", "vm1", "whoami"}
+		output = runCMDsuccess(sshCMD)
+		Expect(output).Should(Equal("core"))
 
 		//init another centos VM with name vm2
-		session = macadamTest.Macadam([]string{"init", "--name", "vm2", image})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
+		initCMD2 := []string{"init", "--name", "vm2", CENTOS_QCOW2_IMAGE}
+		runCMDsuccess(initCMD2)
 
 		// check the list command returns two items
-		session = macadamTest.Macadam([]string{"list", "--format", "json"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		err = json.Unmarshal(session.Out.Contents(), &machineResponses)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(machineResponses)).Should(Equal(2))
+		vmNumberCheck(2)
 
 		// start the CentOS VM2
-		session = macadamTest.Macadam([]string{"start", "vm2"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		Expect(session.OutputToString()).Should(ContainSubstring("started successfully"))
+		startCMD2 := []string{"start", "vm2"}
+		output = runCMDsuccess(startCMD2)
+		Expect(output).Should(ContainSubstring("started successfully"))
 
 		// ssh into the VM2 and prints user
-		session = macadamTest.Macadam([]string{"ssh", "vm2", "whoami"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		Expect(session.OutputToString()).Should(Equal("core"))
+		sshCMD2 := []string{"ssh", "vm2", "whoami"}
+		output = runCMDsuccess(sshCMD2)
+		Expect(output).Should(Equal("core"))
 
 		//check again VM1 still running
-		session = macadamTest.Macadam([]string{"ssh", "vm1", "whoami"})
-		session.WaitWithDefaultTimeout()
-		Expect(session).Should(gexec.Exit(0))
-		Expect(session.OutputToString()).Should(Equal("core"))
+		output = runCMDsuccess(sshCMD)
+		Expect(output).Should(Equal("core"))
 	})
 
 })

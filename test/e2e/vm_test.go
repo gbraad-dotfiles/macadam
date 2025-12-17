@@ -10,7 +10,7 @@ import (
 )
 
 type ListReporter struct {
-	Name		   string
+	Name           string
 	Image          string
 	Created        string
 	Running        bool
@@ -39,12 +39,12 @@ var _ = Describe("Macadam", func() {
 		os.RemoveAll(tempDir)
 	})
 
-	It("creates a new CentOS VM, starts it, ssh in and cleans", func() {
+	It("creates a new CentOS VM, starts it, ssh in and cleans", Label("linux", "darwin"), func() {
 		// verify there is no vm
 		noVMcheck()
 
 		// init a CentOS VM
-		session := macadamTest.Macadam([]string{"init", image})
+		session := macadamTest.Macadam([]string{"init", CENTOS_QCOW2_IMAGE})
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit())
 

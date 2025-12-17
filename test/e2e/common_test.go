@@ -15,24 +15,27 @@ import (
 )
 
 var (
-	macadamTest *MacadamTestIntegration
-	machineResponses []ListReporter
-	err error
-	tempDir string
-	image string
-	keypath string
-	cloudinitPath string
+	macadamTest        *MacadamTestIntegration
+	machineResponses   []ListReporter
+	err                error
+	tempDir            string
+	CENTOS_QCOW2_IMAGE string
+	keypath            string
+	cloudinitPath      string
 )
-
-
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Macadam suite")
 }
 
-func noVMcheck() {
-	session := macadamTest.Macadam([]string{"list", "--format", "json"})
+func noVMcheck(opts ...string) {
+	listCMD := []string{"list", "--format", "json"}
+	if len(opts) > 0 {
+		listCMD = append(listCMD, "--provider", opts[0])
+	}
+
+	session := macadamTest.Macadam(listCMD)
 	session.WaitWithDefaultTimeout()
 	Expect(session).Should(gexec.Exit(0))
 	err := json.Unmarshal(session.Out.Contents(), &machineResponses)
@@ -40,30 +43,69 @@ func noVMcheck() {
 	Expect(len(machineResponses)).Should(Equal(0))
 }
 
-func removeAllVM() {
-	session := macadamTest.Macadam([]string{"list", "--format", "json"})
+func vmNumberCheck(expect_number int, opts ...string) {
+	listCMD := []string{"list", "--format", "json"}
+	if len(opts) > 0 {
+		listCMD = append(listCMD, "--provider", opts[0])
+	}
+
+	session := macadamTest.Macadam(listCMD)
+	session.WaitWithDefaultTimeout()
+	Expect(session).Should(gexec.Exit(0))
+	err := json.Unmarshal(session.Out.Contents(), &machineResponses)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(len(machineResponses)).Should(Equal(expect_number))
+}
+
+func runCMDsuccess(cmd []string) string {
+	GinkgoWriter.Printf("Run cmd: %v\n", cmd)
+	session := macadamTest.Macadam(cmd)
+	session.WaitWithDefaultTimeout()
+	Expect(session).Should(gexec.Exit(0))
+	return session.OutputToString()
+}
+
+func runCMD(cmd []string) (int, string) {
+	GinkgoWriter.Printf("Run cmd: %v\n", cmd)
+	session := macadamTest.Macadam(cmd)
+	session.WaitWithDefaultTimeout()
+	return session.ExitCode(), session.OutputToString()
+}
+
+func removeAllVM(opts ...string) {
+	listCMD := []string{"list", "--format", "json"}
+	baseCMD := []string{}
+	if len(opts) > 0 {
+		provider := opts[0]
+		listCMD = append(listCMD, "--provider", provider)
+		baseCMD = append(baseCMD, "--provider", provider)
+	}
+
+	session := macadamTest.Macadam(listCMD)
 	session.WaitWithDefaultTimeout()
 	Expect(session).Should(gexec.Exit(0))
 	err = json.Unmarshal(session.Out.Contents(), &machineResponses)
 	Expect(err).NotTo(HaveOccurred())
 
 	for _, m := range machineResponses {
-		stopCmd := "stop " + string(m.Name)
-		rmCmd := "rm -f " + string(m.Name)
+		stopCMD := append([]string{"stop"}, baseCMD...)
+		stopCMD = append(stopCMD, m.Name)
+		rmCMD := append([]string{"rm", "-f"}, baseCMD...)
+		rmCMD = append(rmCMD, m.Name)
 
 		// stop the CentOS VM
-		session = macadamTest.Macadam(strings.Fields(stopCmd))
+		session = macadamTest.Macadam(stopCMD)
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit(0))
 		Expect(session.OutputToString()).Should(ContainSubstring("stopped successfully"))
 
 		// rm the CentOS VM and verify that "list" does not return any vm
-		session = macadamTest.Macadam(strings.Fields(rmCmd))
+		session = macadamTest.Macadam(rmCMD)
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit(0))
 	}
 
-	session = macadamTest.Macadam([]string{"list", "--format", "json"})
+	session = macadamTest.Macadam(listCMD)
 	session.WaitWithDefaultTimeout()
 	Expect(session).Should(gexec.Exit(0))
 	err = json.Unmarshal(session.Out.Contents(), &machineResponses)
@@ -77,7 +119,7 @@ var _ = BeforeSuite(func() {
 
 	// download CentOS image
 	centosProvider := osprovider.NewCentosProvider()
-	image, err = centosProvider.Fetch(tempDir)
+	CENTOS_QCOW2_IMAGE, err = centosProvider.Fetch(tempDir)
 	Expect(err).NotTo(HaveOccurred())
 
 	keypath = filepath.Join(tempDir, "id_rsa")
@@ -106,5 +148,5 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-		macadamTest = MacadamTestCreate()
-	})
+	macadamTest = MacadamTestCreate()
+})
