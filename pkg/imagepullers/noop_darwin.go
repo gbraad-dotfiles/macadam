@@ -17,7 +17,7 @@ import (
 	"github.com/lima-vm/go-qcow2reader/image/raw"
 )
 
-func imageExtension(_ define.VMType, sourceURI string) (string, error) {
+func ImageExtension(_ define.VMType, sourceURI string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(sourceURI))
 	switch ext {
 	case ".qcow2", ".raw", ".img":

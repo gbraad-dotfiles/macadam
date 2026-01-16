@@ -44,7 +44,7 @@ var _ = Describe("Macadam", func() {
 		noVMcheck()
 
 		// init a CentOS VM
-		session := macadamTest.Macadam([]string{"init", CENTOS_QCOW2_IMAGE})
+		session := macadamTest.Macadam([]string{"init", IMAGE})
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit())
 

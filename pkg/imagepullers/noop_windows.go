@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func imageExtension(vmType define.VMType, sourceURI string) (string, error) {
+func ImageExtension(vmType define.VMType, sourceURI string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(sourceURI))
 	switch vmType {
 	case define.WSLVirt:

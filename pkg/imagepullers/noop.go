@@ -41,7 +41,7 @@ func (puller *NoopImagePuller) LocalPath() (*define.VMFile, error) {
 		return nil, err
 	}
 
-	imageExt, err := imageExtension(puller.vmType, puller.sourceURI)
+	imageExt, err := ImageExtension(puller.vmType, puller.sourceURI)
 	if err != nil {
 		return nil, err
 	}
@@ -87,3 +87,4 @@ func copyFile(src *os.File, dest string) error {
 	_, err = io.Copy(bufferedWriter, src)
 	return err
 }
+
