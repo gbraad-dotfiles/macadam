@@ -2,27 +2,46 @@ package e2e
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/containers/podman/v5/pkg/machine/define"
+	"github.com/crc-org/macadam/pkg/imagepullers"
 
 	"github.com/crc-org/macadam/test/osprovider"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/spf13/pflag"
 )
 
 var (
-	macadamTest        *MacadamTestIntegration
-	machineResponses   []ListReporter
-	err                error
-	tempDir            string
-	CENTOS_QCOW2_IMAGE string
-	keypath            string
-	cloudinitPath      string
+	macadamTest      *MacadamTestIntegration
+	machineResponses []ListReporter
+	err              error
+	tempDir          string
+	IMAGE            string
+	keypath          string
+	cloudinitPath    string
 )
+
+func TestMain(m *testing.M) {
+	RegisterFlags(flag.CommandLine)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	os.Exit(m.Run())
+}
+
+func RegisterFlags(flags *flag.FlagSet) {
+	flags.StringVar(&IMAGE, "image", "", "Path to the image used in tests.")
+}
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -93,13 +112,13 @@ func removeAllVM(opts ...string) {
 		rmCMD := append([]string{"rm", "-f"}, baseCMD...)
 		rmCMD = append(rmCMD, m.Name)
 
-		// stop the CentOS VM
+		// stop the VM
 		session = macadamTest.Macadam(stopCMD)
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit(0))
 		Expect(session.OutputToString()).Should(ContainSubstring("stopped successfully"))
 
-		// rm the CentOS VM and verify that "list" does not return any vm
+		// rm the VM and verify that "list" does not return any vm
 		session = macadamTest.Macadam(rmCMD)
 		session.WaitWithDefaultTimeout()
 		Expect(session).Should(gexec.Exit(0))
@@ -117,11 +136,30 @@ var _ = BeforeSuite(func() {
 	tempDir, err = os.MkdirTemp("", "test-")
 	Expect(err).NotTo(HaveOccurred())
 
-	// download CentOS image
-	centosProvider := osprovider.NewCentosProvider()
-	CENTOS_QCOW2_IMAGE, err = centosProvider.Fetch(tempDir)
-	Expect(err).NotTo(HaveOccurred())
-
+	
+	if IMAGE != "" {
+		if runtime.GOOS == "windows" {
+			_, err = imagepullers.ImageExtension(define.HyperVVirt, IMAGE)
+			if err != nil {
+				_, err = imagepullers.ImageExtension(define.WSLVirt, IMAGE)
+			}	
+		} else {
+			_, err = imagepullers.ImageExtension(define.UnknownVirt, IMAGE)
+		}
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		if runtime.GOOS != "windows" {
+			// download CentOS image
+			centosProvider := osprovider.NewCentosProvider()
+			IMAGE, err = centosProvider.Fetch(tempDir)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("Using downloaded centos qcow2 image %s for %s test", IMAGE, runtime.GOOS)
+		} else {
+			fmt.Printf("Please provide a VHD/VHDX or tar.gz image using --image flag for Windows tests.")
+			os.Exit(1)
+		}
+	}
+	
 	keypath = filepath.Join(tempDir, "id_rsa")
 	cloudinitPath = filepath.Join(tempDir, "user-data")
 	//generate ssh key

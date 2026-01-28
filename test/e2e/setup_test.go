@@ -38,21 +38,21 @@ var _ = Describe("Macadam init setup test", Label("init", "linux", "darwin"), fu
 	}
 	for _, tt := range tests {
 		It(fmt.Sprintf("init CentOS VM with cpu=%s, disk=%s, memory=%s", tt.cpu, tt.disk, tt.memory), Label("hardware"), func() {
-			init_hardware_test(CENTOS_QCOW2_IMAGE, tt)
+			init_hardware_test(IMAGE, tt)
 		})
 	}
 
 	It("init CentOS VM with username and sshkey setup", Label("sshkey"), func() {
-		init_sshkey_test(CENTOS_QCOW2_IMAGE)
+		init_sshkey_test(IMAGE)
 	})
 
 	It("init CentOS VM with cloud-init setup", Label("cloudinit"), func() {
 		// init a CentOS VM with cpu and disk-size setup
-		init_cloudinit_test(CENTOS_QCOW2_IMAGE)
+		init_cloudinit_test(IMAGE)
 	})
 
 	It("init CentOS VM with name", Label("name"), func() {
 		// init a CentOS VM with name setup
-		init_vmName_test(CENTOS_QCOW2_IMAGE)
+		init_vmName_test(IMAGE)
 	})
 })

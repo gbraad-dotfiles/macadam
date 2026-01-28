@@ -34,13 +34,13 @@ func init_hardware_test(imagePath string, tests Init_Hardware_Parameter, opts ..
 	}
 
 	initCMD = append(initCMD, "init", "--cpus", tests.cpu, "--disk-size", tests.disk, "--memory", tests.memory, imagePath)
-	// init a CentOS VM with cpu and disk-size setup
+	// init a  VM with cpu and disk-size setup
 	runCMDsuccess(initCMD)
 
 	// check the list command returns one item
 	vmNumberCheck(1, opts...)
 
-	// start the CentOS VM
+	// start the  VM
 	output := runCMDsuccess(startCMD)
 	Expect(output).Should(ContainSubstring("started successfully"))
 
@@ -97,7 +97,7 @@ func init_vmName_test(imagePath string, opts ...string) {
 	// check the list command returns one item
 	vmNumberCheck(1, opts...)
 
-	// start the CentOS VM with set name
+	// start the VM with set name
 	output := runCMDsuccess(startCMD)
 	Expect(output).Should(ContainSubstring("started successfully"))
 
@@ -129,7 +129,7 @@ func init_cloudinit_test(imagePath string, opts ...string) {
 	// check the list command returns one item
 	vmNumberCheck(1, opts...)
 
-	// start the CentOS VM
+	// start the VM
 	output := runCMDsuccess(startCMD)
 	Expect(output).Should(ContainSubstring("started successfully"))
 
@@ -155,4 +155,30 @@ func init_cloudinit_test(imagePath string, opts ...string) {
 
 	// ssh into the VM and check file created
 	runCMDsuccess(check_file_exist)
+}
+
+func init_vm_no_param_test(imagePath string, opts ...string) {
+	initCMD := []string{"init", imagePath}
+	startCMD := []string{"start"}
+	checkUser := []string{"ssh", "whoami"}
+
+	if len(opts) > 0 {
+		provider := []string{"--provider", opts[0]}
+		initCMD = append(initCMD, provider...)
+		startCMD = append(startCMD, provider...)
+		checkUser = append(provider, checkUser...)
+	}
+
+	runCMDsuccess(initCMD)
+
+	// check the list command returns one item
+	vmNumberCheck(1, opts...)
+
+	// start the VM
+	output := runCMDsuccess(startCMD)
+	Expect(output).Should(ContainSubstring("started successfully"))
+
+	// ssh into the VM and prints user
+	output = runCMDsuccess(checkUser)
+	Expect(strings.TrimSpace(output)).Should(Equal("core"))
 }

@@ -16,7 +16,7 @@ var _ = Describe("Macadam init setup test", Label("multiple", "linux", "darwin")
 
 	It("create multiple CentOS VM", Label("mul-centos"), func() {
 		// init a CentOS VM with name vm1
-		initCMD := []string{"init", "--name", "vm1", CENTOS_QCOW2_IMAGE}
+		initCMD := []string{"init", "--name", "vm1", IMAGE}
 		runCMDsuccess(initCMD)
 
 		// check the list command returns one item
@@ -33,7 +33,7 @@ var _ = Describe("Macadam init setup test", Label("multiple", "linux", "darwin")
 		Expect(output).Should(Equal("core"))
 
 		//init another centos VM with name vm2
-		initCMD2 := []string{"init", "--name", "vm2", CENTOS_QCOW2_IMAGE}
+		initCMD2 := []string{"init", "--name", "vm2", IMAGE}
 		runCMDsuccess(initCMD2)
 
 		// check the list command returns two items
