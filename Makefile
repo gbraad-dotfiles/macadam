@@ -108,3 +108,28 @@ vendorcheck:
 .PHONY: force-build
 force-build:
 
+e2e_builder = GOOS=$(1) GOARCH=$(2) go test -v ./test/e2e/ -tags "$(BUILDTAGS)" -ldflags="$(3)" -c -o bin/$(1)-$(2)/$(4)
+
+build_e2e:
+	$(call e2e_builder,$(DEFAULT_GOOS),$(DEFAULT_GOARCH),$(MACADAM_LDFLAGS),e2e.test)
+
+build_e2e_all:
+	$(call e2e_builder,linux,amd64,$(MACADAM_LDFLAGS),e2e.test)
+	$(call e2e_builder,linux,arm64,$(MACADAM_LDFLAGS),e2e.test)
+	$(call e2e_builder,darwin,amd64,$(MACADAM_LDFLAGS),e2e.test)
+	$(call e2e_builder,darwin,arm64,$(MACADAM_LDFLAGS),e2e.test)
+	$(call e2e_builder,windows,amd64,$(MACADAM_LDFLAGS),e2e.test.exe)
+
+containerized_e2e:
+ifndef IMAGE_NAME
+IMAGE_NAME = macadam-e2e
+endif
+ifndef OS
+OS = $(DEFAULT_GOOS)
+endif
+ifndef ARCH
+ARCH = $(DEFAULT_GOARCH)
+endif
+
+containerized_e2e: clean
+	podman build -t ${IMAGE_NAME}:${OS}-${ARCH} -f test/image/Containerfile --build-arg=OS=${OS} --build-arg=ARCH=${ARCH} .
