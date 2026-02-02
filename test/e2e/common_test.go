@@ -19,6 +19,7 @@ import (
 	"github.com/crc-org/macadam/test/osprovider"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gomegaformat "github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/gexec"
 	"github.com/spf13/pflag"
 )
@@ -29,6 +30,7 @@ var (
 	err              error
 	tempDir          string
 	IMAGE            string
+	MACADAM_BINARY   string
 	keypath          string
 	cloudinitPath    string
 )
@@ -43,11 +45,25 @@ func TestMain(m *testing.M) {
 
 func RegisterFlags(flags *flag.FlagSet) {
 	flags.StringVar(&IMAGE, "image", "", "Path to the image used in tests.")
+	flags.StringVar(&MACADAM_BINARY, "macadam-binary", "", "Path to the macadam binary to be tested.")
 }
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Macadam suite")
+
+	// disable error/output strings truncation
+	gomegaformat.MaxLength = 0
+
+	// fetch the current (reporter) config
+	suiteConfig, reporterConfig := GinkgoConfiguration()
+
+	err := os.MkdirAll("out", 0775)
+	if err != nil {
+		GinkgoWriter.Printf("failed to create directory: %v", err)
+	}
+	reporterConfig.JUnitReport = filepath.Join("out", "e2e.xml")
+
+	RunSpecs(t, "Macadam suite", suiteConfig, reporterConfig)
 }
 
 func noVMcheck(opts ...string) {

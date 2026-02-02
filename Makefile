@@ -34,6 +34,9 @@ e2e:
 ifndef IMAGE
 IMAGE = --image=""
 endif
+ifndef BINARY
+BINARY = --macadam-binary=""
+endif
 ifndef GINKGO_TAGS
 GINKGO_LABELS = "$(DEFAULT_GOOS)"
 else
@@ -41,7 +44,7 @@ GINKGO_LABELS = "$(DEFAULT_GOOS) && $(GINKGO_TAGS)"
 endif
 
 e2e:
-	@go test --timeout=90m -tags "$(BUILDTAGS)"  -v ./test/e2e/... $(IMAGE) --ginkgo.label-filter=$(GINKGO_LABELS)
+	@go test --timeout=90m -tags "$(BUILDTAGS)"  -v ./test/e2e/... $(IMAGE) $(BINARY) --ginkgo.label-filter=$(GINKGO_LABELS)
 
 clean:
 	@rm -rf bin
