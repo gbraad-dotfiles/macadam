@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/containers/podman/v5/pkg/machine/define"
 	"github.com/crc-org/macadam/pkg/imagepullers"
@@ -84,11 +86,27 @@ func runCMDsuccess(cmd []string) string {
 	return session.OutputToString()
 }
 
-func runCMD(cmd []string) (int, string) {
+func runCMD(cmd []string) (int, string, string) {
 	GinkgoWriter.Printf("Run cmd: %v\n", cmd)
 	session := macadamTest.Macadam(cmd)
 	session.WaitWithDefaultTimeout()
-	return session.ExitCode(), session.OutputToString()
+	return session.ExitCode(), session.OutputToString(), session.ErrorToString()
+}
+
+var DefaultNoWaitTimeout = 2 * time.Second
+
+// Run command with short timeout, then terminate it. Used for commands that hang
+// and never exit. (e.g., SSH with -t in non-interactive environments like containers
+// or CI/CD pipelines)
+// We wait 1 second for output, then sends SIGABRT. This works for both
+// podman run -it and podman run -d scenarios.
+func runCMDNoWait(cmd []string) string {
+	GinkgoWriter.Printf("Run ssh cmd: %v\n", cmd)
+	session := macadamTest.Macadam(cmd)
+	time.Sleep(DefaultNoWaitTimeout)
+	session.Signal(syscall.SIGABRT)
+	os.Stdout.Sync()
+	return session.OutputToString()
 }
 
 func removeAllVM(opts ...string) {
@@ -136,13 +154,12 @@ var _ = BeforeSuite(func() {
 	tempDir, err = os.MkdirTemp("", "test-")
 	Expect(err).NotTo(HaveOccurred())
 
-	
 	if IMAGE != "" {
 		if runtime.GOOS == "windows" {
 			_, err = imagepullers.ImageExtension(define.HyperVVirt, IMAGE)
 			if err != nil {
 				_, err = imagepullers.ImageExtension(define.WSLVirt, IMAGE)
-			}	
+			}
 		} else {
 			_, err = imagepullers.ImageExtension(define.UnknownVirt, IMAGE)
 		}
@@ -159,7 +176,7 @@ var _ = BeforeSuite(func() {
 			os.Exit(1)
 		}
 	}
-	
+
 	keypath = filepath.Join(tempDir, "id_rsa")
 	cloudinitPath = filepath.Join(tempDir, "user-data")
 	//generate ssh key

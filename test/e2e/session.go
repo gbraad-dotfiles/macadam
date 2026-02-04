@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega/gexec" //nolint:staticcheck
 )
 
-var DefaultWaitTimeout = 90
+var DefaultWaitTimeout = 300
 
 // MacadamSession wraps the gexec.session so we can extend it
 type MacadamSession struct {

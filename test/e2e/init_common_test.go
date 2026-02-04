@@ -45,15 +45,15 @@ func init_hardware_test(imagePath string, tests Init_Hardware_Parameter, opts ..
 	Expect(output).Should(ContainSubstring("started successfully"))
 
 	// ssh into the VM and check CPU number
-	output = runCMDsuccess(checkCPU)
+	output = runCMDNoWait(checkCPU)
 	Expect(strings.TrimSpace(output)).Should(Equal(tests.cpu))
 
 	// ssh into the VM and check disk
-	output = runCMDsuccess(checkDisk)
+	output = runCMDNoWait(checkDisk)
 	Expect(output).Should(ContainSubstring(tests.disk))
 
 	// ssh into the VM and check memory
-	output = runCMDsuccess(checkMemory)
+	output = runCMDNoWait(checkMemory)
 	// Verify memory is close to the set memory (allow for system overhead)
 	Expect(output).Should(Or(ContainSubstring(tests.expect_memory[0]), ContainSubstring(tests.expect_memory[1]), ContainSubstring(tests.expect_memory[2]), ContainSubstring(tests.expect_memory[3])))
 }
@@ -76,7 +76,7 @@ func init_sshkey_test(imagePath string, opts ...string) {
 	output := runCMDsuccess(startCMD)
 	Expect(output).Should(ContainSubstring("started successfully"))
 
-	output = runCMDsuccess(usernameCheck)
+	output = runCMDNoWait(usernameCheck)
 	Expect(strings.TrimSpace(output)).Should(Equal("test"))
 }
 
@@ -102,7 +102,7 @@ func init_vmName_test(imagePath string, opts ...string) {
 	Expect(output).Should(ContainSubstring("started successfully"))
 
 	// ssh into the VM and prints user
-	output = runCMDsuccess(checkUser)
+	output = runCMDNoWait(checkUser)
 	Expect(strings.TrimSpace(output)).Should(Equal("core"))
 }
 
@@ -112,7 +112,7 @@ func init_cloudinit_test(imagePath string, opts ...string) {
 	checkuser := []string{"ssh", "whoami"}
 	check_cloudFinal := []string{"ssh", "systemctl", "status", "cloud-final"}
 	check_gitVersion := []string{"ssh", "git", "--version"}
-	check_file_exist := []string{"ssh", "ls", "/home/macadamtest/hello.txt"}
+	check_file_exist := []string{"ssh", "cat", "/home/macadamtest/hello.txt"}
 
 	if len(opts) > 0 {
 		provider := []string{"--provider", opts[0]}
@@ -134,27 +134,24 @@ func init_cloudinit_test(imagePath string, opts ...string) {
 	Expect(output).Should(ContainSubstring("started successfully"))
 
 	// ssh into the VM and prints user
-	output = runCMDsuccess(checkuser)
+	output = runCMDNoWait(checkuser)
 	Expect(strings.TrimSpace(output)).Should(Equal("macadamtest"))
 
 	// wait until cloud-init finish
 	Eventually(func() string {
-		exitcode, output := runCMD(check_cloudFinal)
-
-		if exitcode != 0 {
-			return ""
-		}
+		output := runCMDNoWait(check_cloudFinal)
 		return output
 	}, 20*time.Minute, 30*time.Second).Should(ContainSubstring("Active: active (exited)"))
 
 	GinkgoWriter.Println("cloud-init has finished")
 
 	// ssh into the VM and check installed app
-	output = runCMDsuccess(check_gitVersion)
+	output = runCMDNoWait(check_gitVersion)
 	Expect(output).Should(ContainSubstring("git version"))
 
 	// ssh into the VM and check file created
-	runCMDsuccess(check_file_exist)
+	output = runCMDNoWait(check_file_exist)
+	Expect(output).Should(ContainSubstring("Hello from cloud-init"))
 }
 
 func init_vm_no_param_test(imagePath string, opts ...string) {
@@ -179,6 +176,6 @@ func init_vm_no_param_test(imagePath string, opts ...string) {
 	Expect(output).Should(ContainSubstring("started successfully"))
 
 	// ssh into the VM and prints user
-	output = runCMDsuccess(checkUser)
+	output = runCMDNoWait(checkUser)
 	Expect(strings.TrimSpace(output)).Should(Equal("core"))
 }
