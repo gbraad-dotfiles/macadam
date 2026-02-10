@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/containers/podman/v5/pkg/machine"
 	"github.com/containers/podman/v5/pkg/machine/define"
 	"github.com/containers/podman/v5/pkg/machine/env"
+	"github.com/containers/podman/v5/pkg/machine/shim"
 	"github.com/containers/podman/v5/pkg/machine/vmconfigs"
 	"github.com/crc-org/macadam/cmd/macadam/registry"
 	provider2 "github.com/crc-org/macadam/pkg/machinedriver/provider"
@@ -80,9 +82,13 @@ func inspect(cmd *cobra.Command, args []string) error {
 
 	vms := make([]InspectInfo, 0, len(args))
 	for _, name := range args {
-		mc, err := vmconfigs.LoadMachineByName(name, dirs)
+		mc, _, err := shim.VMExists(name, []vmconfigs.VMProvider{vmProvider})
 		if err != nil {
 			errs = append(errs, err)
+			continue
+		}
+		if mc == nil {
+			errs = append(errs, fmt.Errorf("VM %q does not exist", name))
 			continue
 		}
 
@@ -127,8 +133,12 @@ func inspect(cmd *cobra.Command, args []string) error {
 		vms = append(vms, ii)
 	}
 
-	if err := printJSON(vms); err != nil {
-		errs = append(errs, err)
+	// Only print JSON if we have at least one successful VM
+	// This prevents printing an empty [] when all machines failed
+	if len(vms) > 0 {
+		if err := printJSON(vms); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	return errs.PrintErrors()
 }

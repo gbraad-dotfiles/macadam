@@ -57,7 +57,7 @@ func start(_ *cobra.Command, args []string) error {
 		return err
 	}
 	if vmConfig == nil {
-		return fmt.Errorf("VM %s does not exist", machineName)
+		return fmt.Errorf("VM %q does not exist", machineName)
 	}
 
 	return macadam.Start(vmConfig, vmProvider)
