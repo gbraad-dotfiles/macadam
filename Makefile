@@ -4,7 +4,7 @@ GIT_VERSION ?= $(shell git describe --always --dirty)
 VERSION_LDFLAGS=-X github.com/crc-org/macadam/pkg/cmdline.gitVersion=$(GIT_VERSION)
 MACADAM_LDFLAGS = \
     $(VERSION_LDFLAGS) \
-    -X go.podman.io/common/pkg/config.additionalHelperBinariesDir=$(HELPER_BINARIES_DIR)
+    -X \"go.podman.io/common/pkg/config.additionalHelperBinariesDir=$(HELPER_BINARIES_DIR)\"
 # opengpg and btrfs support are used by github.com/containers/image and
 # github.com/containers/storage when container images are fetched.
 # These require external C libraries and their headers, it's simpler to disable
@@ -71,13 +71,15 @@ bin/macadam-linux-arm64: force-build
 
 bin/macadam-windows-amd64: GOOS=windows
 bin/macadam-windows-amd64: GOARCH=amd64
+bin/macadam-windows-amd64: HELPER_BINARIES_DIR=C:/Program Files/RedHat/Podman
 bin/macadam-windows-amd64: force-build
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -tags "$(BUILDTAGS)" -ldflags "$(VERSION_LDFLAGS)" -o bin/macadam-$(GOOS)-$(GOARCH).exe ./cmd/macadam
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -tags "$(BUILDTAGS)" -ldflags "$(MACADAM_LDFLAGS)" -o bin/macadam-$(GOOS)-$(GOARCH).exe ./cmd/macadam
 
 bin/macadam-windows-arm64: GOOS=windows
 bin/macadam-windows-arm64: GOARCH=arm64
+bin/macadam-windows-arm64: HELPER_BINARIES_DIR=C:/Program Files/RedHat/Podman
 bin/macadam-windows-arm64: force-build
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -tags "$(BUILDTAGS)" -ldflags "$(VERSION_LDFLAGS)" -o bin/macadam-$(GOOS)-$(GOARCH).exe ./cmd/macadam
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -tags "$(BUILDTAGS)" -ldflags "$(MACADAM_LDFLAGS)" -o bin/macadam-$(GOOS)-$(GOARCH).exe ./cmd/macadam
 
 .PHONY: lint
 lint: $(TOOLS_BINDIR)/golangci-lint
