@@ -1,0 +1,29 @@
+name: Build e2e image
+on:
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+env:
+  IMAGE_NAME_E2E: macadam-e2e
+jobs:
+  build-qe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+      - name: Build qe oci image for windows-amd64
+        run: |
+          # e2e
+          ARCH=amd64 OS=windows make containerized_e2e
+          podman save -o ${{ env.IMAGE_NAME_E2E }}-windows-amd64.tar \
+            ${{ env.IMAGE_NAME_E2E}}:windows-amd64
+      - name: Upload e2e windows-amd64
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.IMAGE_NAME_E2E }}-windows-amd64
+          path: ${{ env.IMAGE_NAME_E2E }}-windows-amd64.tar
