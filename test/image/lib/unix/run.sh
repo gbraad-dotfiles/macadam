@@ -41,18 +41,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Prepare results folder
-mkdir -p $targetFolder/results
+mkdir -p $HOME/$targetFolder/results
 
 if [ -n "$macadamBinary" ]; then
-  cp "$macadamBinary" "$targetFolder/bin/macadam"
+  cp "$macadamBinary" "$HOME/$targetFolder/bin/macadam"
 fi
-macadamBinary="$targetFolder/bin/macadam"
+macadamBinary="$HOME/$targetFolder/bin/macadam"
 
 if [ -z "$imageLocation" ] && [ -n "$imageUrl" ]; then
     filename="$(basename "$imageUrl")"
     echo "Download image $filename ..."
-    downloadImage="$targetFolder/testdata/$filename"
-    mkdir -p "$targetFolder/testdata"
+    downloadImage="$HOME/$targetFolder/testdata/$filename"
+    mkdir -p "$HOME/$targetFolder/testdata"
 
     curl -L "$imageUrl" -o "$downloadImage"
     lower_filename="$(echo "$filename" | tr '[:upper:]' '[:lower:]')"
@@ -83,7 +83,7 @@ else
   ginkgoLabelFilter="$oslabel&&$ginkgoLabelFilter"
 fi
 
-cd $targetFolder/bin
+cd $HOME/$targetFolder/bin
 set +e
 ./e2e.test \
   --macadam-binary="$macadamBinary" \
