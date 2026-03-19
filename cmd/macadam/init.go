@@ -10,7 +10,10 @@ import (
 
 	ldefine "github.com/containers/podman/v5/libpod/define"
 	"github.com/containers/podman/v5/pkg/machine/define"
+	"github.com/containers/podman/v5/pkg/machine/env"
+	providerPodman "github.com/containers/podman/v5/pkg/machine/provider"
 	"github.com/containers/podman/v5/pkg/machine/shim"
+	"github.com/containers/podman/v5/pkg/machine/vmconfigs"
 	"github.com/crc-org/macadam/cmd/macadam/registry"
 	"github.com/crc-org/macadam/pkg/imagepullers"
 	macadam "github.com/crc-org/macadam/pkg/machinedriver"
@@ -153,18 +156,40 @@ func init() {
 	flags.BoolVar(&initOpts.Rootful, rootfulFlagName, false, "Whether this machine should prefer rootful container execution") */
 }
 
+// cleanupOrphanedFiles cleans up orphaned files for a given machine
+func cleanupOrphanedFiles(vmProvider vmconfigs.VMProvider, name string) {
+	dirs, err := env.GetMachineDirs(vmProvider.VMType())
+	if err != nil {
+		return
+	}
+
+	mc, err := vmconfigs.LoadMachineByName(name, dirs)
+	if err != nil {
+		return
+	}
+
+	machines, err := providerPodman.GetAllMachinesAndRootfulness()
+	if err != nil {
+		return
+	}
+
+	rmFiles, genericRm, err := mc.Remove(machines, false, false)
+	if err != nil {
+		slog.Debug(fmt.Sprintf("failed to remove machines files of a previous machine having the same name %q. Error: %v", name, err))
+	}
+
+	if len(rmFiles) > 0 {
+		if err := genericRm(); err != nil {
+			slog.Warn(fmt.Sprintf("found orphaned file of a previous machine having the same name %q. Tried to clean the environment but failed to remove old machines files. %v", name, err))
+		}
+	}
+}
+
 func initMachine(cmd *cobra.Command, args []string) error {
 	vmProvider, err := provider2.GetProviderOrDefault(provider)
 	if err != nil {
 		return err
 	}
-
-	/*
-		dirs, err := env.GetMachineDirs(provider.VMType())
-		if err != nil {
-			return err
-		}
-	*/
 
 	diskImage := ""
 	if len(args) > 0 {
@@ -179,6 +204,21 @@ func initMachine(cmd *cobra.Command, args []string) error {
 	if !ldefine.NameRegex.MatchString(machineName) {
 		return fmt.Errorf("invalid name %q: %w", machineName, ldefine.RegexError)
 	}
+
+	mc, _, err := shim.VMExists(machineName, []vmconfigs.VMProvider{vmProvider})
+	if err != nil {
+		return err
+	}
+	if mc != nil {
+		// VM exists, return error
+		return fmt.Errorf("VM %s already exists", machineName)
+	}
+
+	// VM doesn't exist, check if there are orphaned files to clean up
+	// it may happen that a machine has been deleted externally (e.g. through the Hyper-v Manager)
+	// and podman was not aware of it. If the user wants to create a new machine with the same name,
+	// we should clean up the orphaned files.
+	cleanupOrphanedFiles(vmProvider, machineName)
 
 	initOpts := macadam.DefaultInitOpts(machineName)
 	if cmd.Flags().Changed("user-mode-networking") {

@@ -62,14 +62,12 @@ type Driver struct {
 
 // this func should return the driver by using the provider and machineName
 func GetDriverByProviderAndMachineName(provider vmconfigs.VMProvider, machineName string) (*Driver, error) {
-	dirs, err := env.GetMachineDirs(provider.VMType())
+	mc, _, err := shim.VMExists(machineName, []vmconfigs.VMProvider{provider})
 	if err != nil {
 		return nil, err
 	}
-
-	mc, err := vmconfigs.LoadMachineByName(machineName, dirs)
-	if err != nil {
-		return nil, err
+	if mc == nil {
+		return nil, fmt.Errorf("VM %q does not exist", machineName)
 	}
 
 	return &Driver{

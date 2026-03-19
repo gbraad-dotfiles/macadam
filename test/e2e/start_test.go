@@ -11,6 +11,6 @@ var _ = Describe("Macadam starts", Label("windows", "linux", "darwin", "noVM"), 
 		startCMD := []string{"start", "123"}
 		code, _, err := runCMD(startCMD)
 		Expect(code).ShouldNot(Equal(0))
-		Expect(err).Should(Equal("VM 123 does not exist"))
+		Expect(err).Should(Equal("VM \"123\" does not exist"))
 	})
 })
