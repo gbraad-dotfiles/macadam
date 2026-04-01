@@ -11,6 +11,14 @@ on:
 jobs:
   windows-qe:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: hyperv
+            url: "https://crcqe-asia.s3.ap-south-1.amazonaws.com/macadam-image/Fedora-Cloud-Base-Azure-43-1.6.x86_64.vhd"
+          - name: wsl
+            url: "https://mirror.stream.centos.org/SIGs/10-stream/altimages/images/wsl/x86_64/CentOS-Stream-Image-WSL-Base.x86_64-10-202601110111.wsl"
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -44,7 +52,7 @@ jobs:
 
         # Set status_context
         status_context="ci/gh/e2e"
-        status_context="${status_context}/windows-${{env.windows-version}}-${{env.windows-featurepack}}"
+        status_context="${status_context}/windows-${{env.windows-version}}-${{env.windows-featurepack}}-${{ matrix.image.name }}"
         echo "status_context=${status_context}" >> "$GITHUB_ENV"
 
     - name: Add status to the PR check
@@ -76,8 +84,8 @@ jobs:
           -e AZURE_STORAGE_KEY='${{ secrets.AZURE_STORAGE_KEY }}' \
           quay.io/redhat-developer/mapt:v0.9.9 azure \
             windows create \
-            --project-name 'windows-desktop-${{ env.windows-version }}-${{ env.windows-featurepack }}-macadam' \
-            --backed-url azblob://crc-qenvs-state/${{ github.repository }}-${{ github.run_id }} \
+            --project-name 'windows-desktop-${{ env.windows-version }}-${{ env.windows-featurepack }}-macadam-${{ matrix.image.name }}' \
+            --backed-url azblob://crc-qenvs-state/${{ github.repository }}-${{ github.run_id }}-${{ matrix.image.name }} \
             --conn-details-output '/workspace' \
             --nested-virt \
             --cpus 8 \
@@ -94,8 +102,8 @@ jobs:
         # load image
         podman load -i ${{ env.IMAGE_NAME_E2E }}-windows-amd64.tar
         # run
-        fedoraURL="https://crcqe-asia.s3.ap-south-1.amazonaws.com/macadam-image/Fedora-Cloud-Base-Azure-43-1.6.x86_64.vhd"
-        cmd="macadam-test/run.ps1 -imageUrl $fedoraURL "
+        ImageURL="${{ matrix.image.url }}"
+        cmd="macadam-test/run.ps1 -imageUrl $ImageURL "
 
         podman run --rm -d --name windows-e2e-test \
           -e OS=windows \
@@ -126,7 +134,7 @@ jobs:
       uses: actions/upload-artifact@v7
       if: always()
       with:
-        name: windows-${{env.windows-version}}${{env.windows-featurepack}}
+        name: windows-${{env.windows-version}}${{env.windows-featurepack}}-${{ matrix.image.name }}
         path: |
           **/*.xml
           **/*.results
@@ -167,6 +175,6 @@ jobs:
           -e AZURE_STORAGE_KEY='${{ secrets.AZURE_STORAGE_KEY }}' \
           quay.io/redhat-developer/mapt:v0.9.9 azure \
             windows destroy \
-            --project-name 'windows-desktop-${{ env.windows-version }}-${{ env.windows-featurepack }}-macadam' \
-            --backed-url azblob://crc-qenvs-state/${{ github.repository }}-${{ github.run_id }}
+            --project-name 'windows-desktop-${{ env.windows-version }}-${{ env.windows-featurepack }}-macadam-${{ matrix.image.name }}' \
+            --backed-url azblob://crc-qenvs-state/${{ github.repository }}-${{ github.run_id }}-${{ matrix.image.name }}
         podman logs -f windows-destroy
