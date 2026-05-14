@@ -86,6 +86,10 @@ func init() {
 	flags.StringSliceVarP(&initOptsFromFlags.CloudInitPaths, CloudInitPathFlagName, "", []string{}, "Path to user-data, meta-data and network-config cloud-init configuration files")
 	_ = initCmd.RegisterFlagCompletionFunc(CloudInitPathFlagName, completion.AutocompleteDefault)
 
+	FirmwareFlagName := "firmware"
+	flags.StringVar(&initOptsFromFlags.Firmware, FirmwareFlagName, "", "Boot firmware: \"uefi\" or \"\" (default BIOS)")
+	_ = initCmd.RegisterFlagCompletionFunc(FirmwareFlagName, completion.AutocompleteNone)
+
 	// User-mode networking flag is only available on Windows (HyperV-only)
 	if runtime.GOOS == "windows" {
 		userModeNetFlagName := "user-mode-networking"

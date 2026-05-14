@@ -64,6 +64,7 @@ func (q *QEMUStubber) setQEMUCommandLine(mc *vmconfigs.MachineConfig) error {
 	}
 
 	q.QEMUPidPath = mc.QEMUHypervisor.QEMUPidPath
+	q.Firmware = mc.QEMUHypervisor.Firmware
 
 	q.Command = command.NewQemuBuilder(qemuBinary, q.addArchOptions(nil))
 	q.Command.SetBootableImage(mc.ImagePath.GetPath())
@@ -115,6 +116,7 @@ func (q *QEMUStubber) CreateVM(opts define.CreateVMOpts, mc *vmconfigs.MachineCo
 
 	qemuConfig := vmconfigs.QEMUConfig{
 		QMPMonitor: monitor,
+		Firmware:   opts.Firmware,
 	}
 	machineRuntimeDir, err := mc.RuntimeDir()
 	if err != nil {
