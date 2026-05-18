@@ -1,0 +1,41 @@
+ARG BASE_IMAGE="mcr.microsoft.com/devcontainers/base"
+ARG BASE_VERSION="latest"
+
+FROM ${BASE_IMAGE}:${BASE_VERSION}
+
+LABEL org.opencontainers.image.source = "https://github.com/gbraad-dotfiles/upstream"
+
+ARG USER="gbraad"
+ARG HOMEBASE="/home"
+ARG USERHOME="${HOMEBASE}/${USER}"
+ARG ROOTHOME="/root"
+ARG ARCH="amd64"
+ARG USERID=1000
+
+USER root
+
+RUN apt update \
+    && apt install -y \
+        systemd \
+        systemd-container \
+	    init \
+        sudo \
+        git \
+        curl \
+    && apt install -y \
+        ansible \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN userdel -r "vscode" 2>/dev/null || true \
+    && useradd -l -u ${USERID} -G sudo -md ${USERHOME} -p ${USER} ${USER} \
+    && sed -i.bkp -e '/Defaults\tuse_pty/d' -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers
+
+# Moved everything else to devcontainer features
+USER root
+
+# enable linger for the user (loginctl won't work without systemd running)
+RUN mkdir -p /var/lib/systemd/linger \
+    && touch /var/lib/systemd/linger/${USER}
+
+# Enable systemd
+ENTRYPOINT [ "/sbin/init" ]
